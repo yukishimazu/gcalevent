@@ -1,0 +1,155 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="description" content="Google Calendar Event Registration Tool">
+<title>Google Calendar Event Registration Tool</title>
+<link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/themes/smoothness/jquery-ui.css">
+<style>
+* { font-size:14px;font-family:arial; }
+legend { font-weight:bold; }
+form table { width:100%; }
+form th { width:15%;padding:5px;vertical-align:top; text-align:right; }
+form td { width:85%;padding:5px; }
+form td.date input[type=text] { width:8em; }
+form input.eventinfo, input.eventurl { width:100%; }
+form textarea { width:100%; height:10em; }
+#result { display:none; }
+</style>
+</head>
+<body>
+
+<fieldset>
+    <legend>Google Calendar Event Registration Tool</legend>
+    <form>
+    <table>
+        <tr>
+            <th>Title</th><td><input placeholder="Friend's Birthday" class="eventinfo" type="text" name="event_title" id="event_title"></td>
+        </tr>
+        <tr>
+            <th>Date</th>
+            <td class="date">
+                <input type="text" name="dtstart_date" id="dtstart_date"> <select name="dtstart_time" id="dtstart_time"></select> ~
+                <select name="dtend_time" id="dtend_time"></select> <input type="text" name="dtend_date" id="dtend_date">
+                <label><input type="checkbox" name="allday" id="allday"> All Day</label>
+            </td>
+        </tr>
+        <tr>
+            <th>Location</th>
+            <td><input placeholder="Friend's House" class="eventinfo" type="text" name="event_location" id="event_location"></td>
+        </tr>
+        <tr>
+            <th>Detail</th>
+            <td><textarea class="eventinfo" name="event_details" id="event_details" placeholder="ToDo List"></textarea></td>
+        </tr>
+        <tr>
+            <th></th>
+            <td><input type="submit" value="SUBMIT"> <input type="reset" value="CLEAR"></td>
+        </tr>
+    </table>
+    </form>
+</fieldset>
+
+<fieldset id="result">
+    <legend>URL</legend>
+    <input class="eventurl" type="text" name="url" id="url">
+    <a target="_blank" href="#" id="url_link">LINK</a>
+</fieldset>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
+<script>
+$(function(){
+    $('#dtstart_date').datepicker({dateFormat:'yy/mm/dd'});
+    $('#dtend_date').datepicker({dateFormat:'yy/mm/dd'});
+    var time_list_h = [ '00', '01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', 
+                        '12', '13', '14', '15', '16', '17', '18', '19', '20', '21', '22', '23' ];
+    var time_list_m = [ '00', '15', '30', '45' ];
+    for ( var i in time_list_h ){
+        for ( var j in time_list_m ){
+            $('#dtstart_time').append('<option>'+ time_list_h[i] +':'+ time_list_m[j] +'</option>');
+            $('#dtend_time').append('<option>'+ time_list_h[i] +':'+ time_list_m[j] +'</option>');
+        }
+    }
+
+    var now = new Date();
+    var yyyymmdd = now.getFullYear() +'/'+ ( '0'+( now.getMonth()+1 ) ).slice(-2) +'/'+ ( '0'+now.getDate() ).slice(-2);
+    $('#dtstart_date').val( yyyymmdd );
+    $('#dtend_date').val( yyyymmdd );
+});
+$('#allday').click(function(){
+    if ( $('#dtstart_time').css('display').indexOf('block') !== -1 ) {
+        $('#dtstart_time').hide();
+    }else{
+        $('#dtstart_time').show();
+    }
+    if ( $('#dtend_time').css('display').indexOf('block') !== -1  ) {
+        $('#dtend_time').hide();
+    }else{
+        $('#dtend_time').show();
+    }
+});
+$('form').submit(function(){
+    var event_title = $('#event_title').val();
+    var event_details = $('#event_details').val();
+    var event_location = $('#event_location').val();
+
+    var dtstart_date_obj = $('#dtstart_date').val().split('/');
+    var dtend_date_obj = $('#dtend_date').val().split('/');
+    var dtstart = new Date( dtstart_date_obj[0], dtstart_date_obj[1] - 1, dtstart_date_obj[2] );
+    var dtend = new Date( dtend_date_obj[0], dtend_date_obj[1] - 1, dtend_date_obj[2] );
+
+    var is_allday = ( $('#dtstart_time').css('display').indexOf('block') !== -1 && $('#dtend_time').css('display').indexOf('block') !== -1 ) ? false : true;
+    if( !is_allday ){
+        var dtstart_time_obj = $('#dtstart_time').val().split(':');
+        var dtend_time_obj = $('#dtend_time').val().split(':');
+        dtstart.setHours( dtstart_time_obj[0], dtstart_time_obj[1] );
+        dtend.setHours( dtend_time_obj[0], dtend_time_obj[1]) ;
+
+        dtstart.setHours( dtstart.getHours() + ( (new Date()).getTimezoneOffset() / 60 ) );
+        dtend.setHours( dtend.getHours() + ( (new Date()).getTimezoneOffset() / 60 ) );
+    } else {
+        dtend.setDate( dtend.getDate() + 1 );
+    }
+
+    var dtstart_year = dtstart.getFullYear();
+    var dtstart_month = dtstart.getMonth() + 1;
+    dtstart_month = ( dtstart_month < 10 ) ? '0' + dtstart_month.toString() : dtstart_month;
+    var dtstart_day = ( dtstart.getDate() < 10 ) ? '0' + dtstart.getDate() : dtstart.getDate();
+
+    var dtend_year = dtend.getFullYear();
+    var dtend_month = dtend.getMonth() + 1;
+    dtend_month = ( dtend_month < 10 ) ? '0' + dtend_month.toString() : dtend_month;
+    var dtend_day = ( dtend.getDate() < 10 ) ? '0' + dtend.getDate() : dtend.getDate();
+
+    if( !is_allday ){
+        var dtstart_hour = ( dtstart.getHours() < 10 ) ? '0' + dtstart.getHours().toString() : dtstart.getHours();
+        var dtstart_min = ( dtstart.getMinutes() < 10 ) ? '0' + dtstart.getMinutes().toString() : dtstart.getMinutes();
+        var dtend_hour = ( dtend.getHours() < 10 ) ? '0' + dtend.getHours().toString() : dtend.getHours();
+        var dtend_min = ( dtend.getMinutes() < 10 ) ? '0' + dtend.getMinutes().toString() : dtend.getMinutes();
+    }
+
+    var url = 'https://www.google.com/calendar/render?action=TEMPLATE&sf=true&output=xml';
+    url += '&text=' + encodeURI(event_title);
+    url += '&location=' + encodeURI(event_location);
+    url += '&details=' + encodeURI(event_details);
+
+    if( is_allday ){
+        url += '&dates=' + dtstart_year.toString() + dtstart_month.toString() + dtstart_day.toString() +'/'+ dtend_year.toString() + dtend_month.toString() + dtend_day.toString();
+    }else{
+        url += '&dates=' + dtstart_year.toString() + dtstart_month.toString() + dtstart_day.toString() +'T'+ dtstart_hour.toString() +  dtstart_min.toString() + '00Z/';
+        url += dtend_year.toString() + dtend_month.toString() + dtend_day.toString() +'T'+ dtend_hour.toString() +  dtend_min.toString() + '00Z';
+    }
+
+    $('#url').val(url);
+    $('#url_link').attr('href',url);
+    $('#result').fadeIn();
+    return false;
+});
+$('#url').focus(function(){
+    this.select();
+});
+</script>
+</body>
+</html>
